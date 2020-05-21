@@ -11,12 +11,18 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pandas import DataFrame
 
 
+# Naudotas saltinis diagramoms braizyti
 ## https://datatofish.com/matplotlib-charts-tkinter-gui/
 
+
 class Constants:
+    # Konstantu klase
+
+    # Langu pavadinimu konstantos, skirtos pakeisti rodoma langa vartotojui
     WINDOW_HOME = "WINDOW_HOME"
     WINDOW_GRAPHIC = "WINDOW_GRAPHIC"
 
+    # Langu pavadinimai
     TITLE_HOME = "Donatas Žitkus, v0.00001 beta"
     TITLE_GRAPHIC = "Donatas Žitkus, v0.00001 beta"
 
@@ -26,6 +32,9 @@ class Constants:
 
 
 class DiagramData:
+    # Klase skirta laikyti diagramos duomenis
+    # X ir Y asiu pavadinimai
+    # X asies duomenys, Y asies duomenys (vykdymo laiko atvaizdavimas)
     def __init__(self, xtitle, xdata, ytitle, ydata):
         self.xtitle = xtitle
         self.xdata = xdata
@@ -33,6 +42,7 @@ class DiagramData:
         self.ydata = ydata
 
     def getDiagramAsDictionary(self):
+        "Metodas skirtas diagramos duomenis atvaizduoti kaip dictionary"
         return {self.xtitle: self.xdata, self.ytitle: self.ydata}
 
 
@@ -46,25 +56,30 @@ class WindowUtils:
 
 
 class Actions:
-    workTimeOnThread = 0
-    workTimeNormal = 0
+    # Funkciju vykdymo laikas skirtingais metodais
+    workTimeOnThread = 0  # Vykdymas Threadais
+    workTimeNormal = 0  # Nuoseklus vykdymas
 
     def _generateRandomArray(self, amount):
+        # Sugeneruojamas atsitiktinis masyvas pagal vartotojo nurodyta kieki, reiksmes nuo 1 iki 1000
         self._numberArray = np.random.randint(low=1, high=1000, size=amount)
 
     def _calculateSumOfArray(self, array):
+        "Metodas skirtas masyvo nariu sumai apskaiciuoti"
         sum = 0
         for el in array:
             sum += el
         return sum
 
     def _multiplyArray(self, array):
+        "Metodas skirtas masyvo nariu sandaugai apskaiciuoti"
         multi = 1
         for el in array:
             multi = multi * el
         return multi
 
     def _min(self, array):
+        "Metodas skirtas maziausia masyvo nari rasti"
         min = array[0]
         for i in range(1, len(array)):
             if array[i] < min:
@@ -72,6 +87,7 @@ class Actions:
         return min
 
     def doActionsNormally(self, arraySize):
+        "Metodas skirtas uzduotis ivykdyti nuosekliai"
         startTime = time.perf_counter()
         self._generateRandomArray(amount=arraySize)
         sum = self._calculateSumOfArray(self._numberArray)
@@ -98,11 +114,16 @@ class Actions:
         min = self._min(self._numberArray)
 
     def doActionsOnThreads(self, arraySize, numberOfThreads):
+        # Vartotojas nurode, jog veiksmai bus vykdomi viename Thread'e
         if numberOfThreads == 1:
+            # laikas pries funkcijos vykdyma
             startTime = time.perf_counter()
+            # sukuriamas naujas threadas
             thr = threading.Thread(target=self.doActionsNormally, args=(arraySize,))
             thr.start()
+            # palaukiama, kol thread'as ivykdys veiksmus
             thr.join()
+            # apskaiciuojamas vykdymo laikas
             self.workTimeOnThread = time.perf_counter() - startTime
         elif numberOfThreads == 2:
             listOfThreads = []
@@ -135,6 +156,7 @@ class Actions:
             self.workTimeOnThread = time.perf_counter() - startTime
 
 
+# Metodas paveldi informacija is klases Frame ir WindowUtils
 class Home(tkx.Frame, WindowUtils):
     def __init__(self, parent, controller):
         tkx.Frame.__init__(self, parent)
@@ -143,16 +165,17 @@ class Home(tkx.Frame, WindowUtils):
         self._actions = Actions()
 
     def entryChangeListener(self, *args):
-        if (len(self._numberValue.get()) > 0 and len(self._threadValue.get())) > 0 or (len(self._numberValue.get()) > 0 and self._optionsMenuValue[1] == 0):
+        "Metodas skirtas stebeti vartotojo koreguojamus elementus ir pagal tai leisti/neleisti veiksmu vykdyma"
+        if (len(self._numberValue.get()) > 0 and len(self._threadValue.get())) > 0 or (
+                len(self._numberValue.get()) > 0 and self._optionsMenuValue[1] == 0):
             self._submitButton.config(state='normal')
         else:
             self._submitButton.config(state='disabled')
 
-    def selection(self, i):
-        print(self._optionsMenuButtons[i].grab_status())
-
     def refresh(self, bundle):
+        # Nustatomas lango pavadinimas
         self._controller.title(Constants.TITLE_HOME)
+        # Isvalomi pries tai lange buve elementai pasinaudojant elementu is klases WindowUtils (paveldejimas)
         self.clearWindow()
 
         infoLabel = tkx.Label(self,
@@ -182,10 +205,12 @@ class Home(tkx.Frame, WindowUtils):
         self._choicesFrame = tkx.Frame(self)
         self._choicesFrame.pack()
 
+        # CheckBoxes arba kitaip veiksmu vykdymo tipu pasarinkimas
         self._choices = ("Nuoseklus vykdymas", "Gijomis paremtas vykdymas")
         self._optionsMenuValue = []
         self._optionsMenuButtons = []
         for i in range(len(self._choices)):
+            # Nustatoma mygtuko reiksme. 1 - pasirinkta, 0 - nepasirinkta
             self._optionsMenuValue.append(tkx.IntVar(value=1))
             self._optionsMenuValue[i].trace("w", self.entryChangeListener)
             self._optionsMenuButtons.append(
@@ -197,15 +222,17 @@ class Home(tkx.Frame, WindowUtils):
         self._buttonsFrame.pack()
 
         self._submitButton = tkx.Button(self._buttonsFrame, text="Vykdyti")
-        self._submitButton.pack(side="left", anchor=tkx.NW, expand=True,)
+        self._submitButton.pack(side="left", anchor=tkx.NW, expand=True, )
+        # Veiksmu vykdyma perkeliu i atskira Thread'a, kad neatsitiktu taip, jog esant dideliam duomenu kiekiui
+        # programa taps "not responding"
         self._submitButton.config(command=lambda: threading.Thread(target=self.doActions).start(), state='disabled')
 
         self._clearButton = tkx.Button(self._buttonsFrame, text="Isvalyti")
-        self._clearButton.pack(side="left", anchor=tkx.NW, expand=True,)
+        self._clearButton.pack(side="left", anchor=tkx.NW, expand=True, )
         self._clearButton.config(command=partial(self._actionClear))
 
         self._exitButton = tkx.Button(self._buttonsFrame, text="Uzdaryti")
-        self._exitButton.pack(side="left", anchor=tkx.NW, expand=True,)
+        self._exitButton.pack(side="left", anchor=tkx.NW, expand=True, )
         self._exitButton.config(command=lambda: self._controller.exit())
 
         self._errorLabel = tkx.Label(self, text="")
@@ -215,20 +242,22 @@ class Home(tkx.Frame, WindowUtils):
         self._progressLabel.pack()
 
     def _actionClear(self):
+        "Metodas skirtas isvalyti vartotojo pasirinkimus CheckBox'uose"
         if len(self._numberValue.get()) > 0 or len(self._threadValue.get()) > 0 or self.checkboxesAreModified():
             self._numberValue.set("")
             self._threadValue.set("")
             for i in range(len(self._optionsMenuValue)):
                 self._optionsMenuValue[i].set(value=1)
 
-
     def checkboxesAreModified(self):
+        "Metodas skirtas patikrinti, ar vartotojas atliko pakeitimus "
         for c in self._optionsMenuValue:
             if c.get() == 0:
                 return True
         return False
 
     def allChecboxesUnselected(self):
+        "Metodas skirtas patikrinti, ar visi Checkbox'ai nera pazymeti"
         for c in self._optionsMenuValue:
             if c.get() == 1:
                 return False
@@ -240,6 +269,7 @@ class Home(tkx.Frame, WindowUtils):
 
         try:
             nValue = int(self._numberValue.get())
+            # Vartotojo ivesta reiksme turi buti nurodytame intervale
             if nValue < 1 or nValue > 9999999:
                 raise Exception
         except Exception:
@@ -247,6 +277,7 @@ class Home(tkx.Frame, WindowUtils):
             errors = True
         try:
             tValue = int(self._threadValue.get())
+            # Vartotojo nurodytas Thread'u skaicius turi buti siame intervale
             if tValue < 1 or tValue > 3:
                 raise Exception
         except Exception:
@@ -256,15 +287,18 @@ class Home(tkx.Frame, WindowUtils):
             errorText += "\n* Pasirinkite bent viena atlikimo buda"
             errors = True
 
+        # Grazinamas error tekstas ir boolean tipo reiksme errors, kuri parodo, ar bent vienas neatitikimas buvo rastas
         return errorText, errors
 
     def doActions(self):
+        "Metodas skirtas vykdyti uzduotyje nurodytus veiksmus"
         self._progressLabel.config(text="Vykdoma. Prasau palaukti")
         errorText, hasErrors = self.checkErrors()
 
         xdata = []
         ydata = []
 
+        # Bent viena klaida buvo rasta
         if hasErrors:
             self._errorLabel.config(text=errorText)
         else:
@@ -287,30 +321,26 @@ class Home(tkx.Frame, WindowUtils):
                 t.join()
 
             for t in listOfThreads:
+                # Vykdomas nuoseklus darbas
                 if t.name == "Normal":
+                    # Pridedamas nuoseklaus darbo pavadinimas kaip X asies reiksme
                     xdata.append(t.name)
+                    # Pridedamas nuoseklaus darbo vykdymo laikas kaip Y asies reiksme
                     ydata.append(self._actions.workTimeNormal)
+                # Vykdomas Thread'ais paremtas darbas
                 elif t.name == "Threading":
                     xdata.append(t.name)
                     ydata.append(self._actions.workTimeOnThread)
 
+            # Sukuriamas diagramos objektas
             diagramData = DiagramData(xtitle="Vykdymo tipas", xdata=xdata, ytitle="Laikas sec.", ydata=ydata)
+            # Pakeiciamas langas i diagramos langa, perduodant diagramos duomenis
             self._controller.switch_frame(Constants.WINDOW_GRAPHIC, diagramData)
 
         self._progressLabel.config(text="")
 
 
-class MyThread(threading.Thread):
-    def __init__(self, actions):
-        threading.Thread.__init__(self)
-        self._actions = actions
-
-    def run(self):
-        sTime = time.perf_counter()
-        self._actions.doOnThread()
-        self._actions.workTimeOnThread = time.perf_counter() - sTime
-
-
+# Klase paveldi informacija is klases Frame ir WindowUtils
 class Graphic(tkx.Frame, WindowUtils):
     def __init__(self, parent, controller):
         tkx.Frame.__init__(self, parent)
@@ -320,12 +350,16 @@ class Graphic(tkx.Frame, WindowUtils):
         self._controller.title(Constants.TITLE_GRAPHIC)
         self.clearWindow()
 
+        # Mygtukas atgal, kuris grizta i Home (pries tai buvusi) langa
         backButton = tkx.Button(self, text="<-- ATGAL")
         backButton.pack()
         backButton.config(
             command=lambda: self._controller.switch_frame(Constants.WINDOW_HOME))
 
+        # Jeigu keiciant langa buvo perduoti diagramos duomenys, sugeneruojama diagrama
         if bundle:
+            # Vykdomas try/except blokas, kad isvengti diagramos braizymo klaidu:
+            # Blogi duomenys, masyvu ilgiu neatitikimas (x asis turi daugiau reiksmiu nei y ir atvirksciai) ir pns.
             try:
                 self.generateDiagram(bundle)
             except:
@@ -338,6 +372,7 @@ class Graphic(tkx.Frame, WindowUtils):
         errorLabel.pack()
 
     def generateDiagram(self, diagramData):
+        # Braizoma diagrama pasinaudojant diagramos duomenimis bei paverciant juos i dictionary
         df1 = DataFrame(diagramData.getDiagramAsDictionary(), columns=[diagramData.xtitle, diagramData.ytitle])
 
         figure1 = plt.Figure(figsize=(7, 9), dpi=70)
@@ -349,6 +384,7 @@ class Graphic(tkx.Frame, WindowUtils):
         ax1.set_title('Veiksmu vykdymo laikas pagal vykdymo tipa')
 
 
+# Klase application paveldi informacija is klases Tk
 class Application(tkx.Tk):
     def __init__(self, *args, **kwargs):
         tkx.Tk.__init__(self, *args, *kwargs)
@@ -364,14 +400,15 @@ class Application(tkx.Tk):
 
         self.container = container
 
+        # Programoje egzistuojantys langai
         self._frames[Constants.WINDOW_HOME] = Home(parent=container, controller=self)
-
         self._frames[Constants.WINDOW_GRAPHIC] = Graphic(parent=container, controller=self)
 
         # Pradinis aplikacijos langas
         self.switch_frame(Constants.WINDOW_HOME)
 
     def exit(self):
+        "Metodas skirtas baigti programos darba (uzdaryti)"
         self.destroy()
 
     def switch_frame(self, window_name, bundle=None):
